@@ -1,0 +1,13 @@
+services:
+  builder:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./:/app
+    environment:
+      - GOOS=linux
+      - GOARCH=386
+      - CGO_ENABLED=0
+    command: go build -o sample cmd/main.go
+    
