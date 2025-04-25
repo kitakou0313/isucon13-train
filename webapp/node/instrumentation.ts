@@ -1,19 +1,37 @@
-/*instrumentation.ts*/
+/* instrumentation.ts */
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import {
   PeriodicExportingMetricReader,
-  ConsoleMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 
-// あとで直す
+// Create OTLP exporters
+const traceExporter = new OTLPTraceExporter({
+  // url: 'http://localhost:4318/v1/traces', // optional, defaults to environment variables
+});
+
+const metricExporter = new OTLPMetricExporter({
+  // url: 'http://localhost:4318/v1/metrics', // optional
+});
+
+// Initialize the SDK
 const sdk = new NodeSDK({
-  traceExporter: new ConsoleSpanExporter(),
+  traceExporter,
   metricReader: new PeriodicExportingMetricReader({
-    exporter: new ConsoleMetricExporter(),
+    exporter: metricExporter,
   }),
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
-sdk.start();
+// Start the SDK
+sdk.start()
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  sdk.shutdown()
+    .then(() => console.log('OpenTelemetry SDK shut down successfully'))
+    .catch((err) => console.error('Error shutting down OpenTelemetry SDK', err))
+    .finally(() => process.exit(0));
+});
