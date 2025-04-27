@@ -2,7 +2,8 @@
   "name": "isupipe",
   "version": "1.0.0",
   "scripts": {
-    "start": "tsx watch src/main.ts",
+    "build": "npx tsc main.ts --outDir dist",
+    "start": "npm run build && node --require instrumentaion.ts dist/main.js",
     "format": "prettier -w src",
     "lint": "eslint --fix src"
   },
