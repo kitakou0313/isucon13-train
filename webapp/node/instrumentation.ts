@@ -9,11 +9,11 @@ import {
 
 // Create OTLP exporters
 const traceExporter = new OTLPTraceExporter({
-  // url: 'http://localhost:4318/v1/traces', // optional, defaults to environment variables
+  url: 'http://192.168.101.4:4318/v1/traces', // optional, defaults to environment variables
 });
 
 const metricExporter = new OTLPMetricExporter({
-  // url: 'http://localhost:4318/v1/metrics', // optional
+  url: 'http://192.168.101.4:4318/v1/metrics', // optional
 });
 
 // Initialize the SDK
