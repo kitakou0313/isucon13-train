@@ -38,3 +38,5 @@ configs/mysql/*
 
 configs/nginx/*
 !configs/nginx/.gitkeep
+
+webapp/node/dist
