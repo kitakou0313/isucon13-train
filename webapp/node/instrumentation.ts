@@ -7,6 +7,8 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 
+console.log("Starting OTel instrumetation...")
+
 // Create OTLP exporters
 const traceExporter = new OTLPTraceExporter({
   url: 'http://192.168.64.1:4318/v1/traces', // optional, defaults to environment variables
