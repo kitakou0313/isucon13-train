@@ -16,6 +16,11 @@
 - メモリバンクディレクトリの作成
 - 基本ドキュメントの作成（projectbrief.md, productContext.md, systemPatterns.md, techContext.md, activeContext.md, progress.md）
 
+### パフォーマンス分析
+- トレースID `885ada791905ebc9e836d2f223c43da5` の分析
+- `/api/livestream/:livestream_id/reaction` エンドポイントのN+1問題特定
+- 最適化方針の策定
+
 ## 次のステップ
 
 ### 短期的なタスク
@@ -23,6 +28,39 @@
    - エンドポイントごとの処理フローの理解
    - データベースクエリの分析
    - パフォーマンスボトルネックの特定
+   
+   #### リアクションエンドポイント最適化
+   トレースID `885ada791905ebc9e836d2f223c43da5` の分析結果に基づく `/api/livestream/:livestream_id/reaction` エンドポイントの最適化：
+   
+   **問題点**:
+   - N+1クエリ問題：各リアクションに対して個別にユーザー情報、ライブストリーム情報、タグ情報などを取得
+   - 深い呼び出し階層：`getReactionsHandler` → `fillReactionResponse` → `fillUserResponse` / `fillLivestreamResponse` → `fillUserResponse`
+   - 同じパターンのクエリが多数実行されている（例：`SELECT * FROM tags WHERE id = ?`）
+   
+   **最適化方針**:
+   1. N+1問題の解消：
+      - ユーザー情報の一括取得（`IN`句の活用）
+      - ライブストリーム情報の一括取得
+      - テーマ情報の一括取得
+      - アイコン情報の一括取得
+      - タグ情報の一括取得（JOINの活用）
+   
+   2. 処理構造の最適化：
+      - 深い呼び出し階層をフラットな構造に変更
+      - データの一括取得と効率的なマッピング
+   
+   3. インデックスの追加：
+      ```sql
+      CREATE INDEX idx_reactions_livestream_id ON reactions(livestream_id);
+      CREATE INDEX idx_livestream_tags_livestream_id ON livestream_tags(livestream_id);
+      CREATE INDEX idx_icons_user_id ON icons(user_id);
+      CREATE INDEX idx_themes_user_id ON themes(user_id);
+      ```
+   
+   **期待される効果**:
+   - クエリ数の大幅削減：リアクション数に比例していたクエリ数が固定数に
+   - レスポンスタイムの短縮：50-80%程度の短縮が期待できる
+   - スケーラビリティの向上：リアクション数が増えても安定したパフォーマンス
 
 2. **環境セットアップ**
    - 本番環境との接続設定
