@@ -18,12 +18,20 @@ export const fillReactionResponse = async (
   conn: PoolConnection,
   reaction: ReactionsModel,
   getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
+  userMap?: Map<number, UserModel>,
 ) => {
-  const [[user]] = await conn.query<(UserModel & RowDataPacket)[]>(
-    'SELECT * FROM users WHERE id = ?',
-    [reaction.user_id],
-  )
-  if (!user) throw new Error('not found user that has the given id')
+  let user: UserModel;
+  
+  if (userMap && userMap.has(reaction.user_id)) {
+    user = userMap.get(reaction.user_id)!;
+  } else {
+    const [[userResult]] = await conn.query<(UserModel & RowDataPacket)[]>(
+      'SELECT * FROM users WHERE id = ?',
+      [reaction.user_id],
+    )
+    if (!userResult) throw new Error('not found user that has the given id')
+    user = userResult;
+  }
 
   const userResponse = await fillUserResponse(conn, user, getFallbackUserIcon)
 

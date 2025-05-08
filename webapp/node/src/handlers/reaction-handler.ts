@@ -8,7 +8,7 @@ import {
   fillReactionResponse,
 } from '../utils/fill-reaction-response'
 import { throwErrorWith } from '../utils/throw-error-with'
-import { ReactionsModel } from '../types/models'
+import { ReactionsModel, UserModel } from '../types/models'
 import { atoi } from '../utils/integer'
 
 // GET /api/livestream/:livestream_id/reaction
@@ -41,12 +41,27 @@ export const getReactionsHandler = [
         .query<(ReactionsModel & RowDataPacket)[]>(query, [livestreamId])
         .catch(throwErrorWith('failed to get reactions'))
 
+      // ユーザーIDを抽出して重複を排除
+      const userIds = [...new Set(reactions.map(reaction => reaction.user_id))];
+      
+      // IN句を使用して一度のクエリですべてのユーザー情報を取得
+      const [users] = await conn
+        .query<(UserModel & RowDataPacket)[]>(
+          'SELECT * FROM users WHERE id IN (?)',
+          [userIds.length > 0 ? userIds : [0]] // 空の場合にエラーを回避
+        )
+        .catch(throwErrorWith('failed to get users'))
+      
+      // ユーザーIDをキーとするMapを作成
+      const userMap = new Map(users.map(user => [user.id, user]));
+
       const reactionResponses: ReactionResponse[] = []
       for (const reaction of reactions) {
         const reactionResponse = await fillReactionResponse(
           conn,
           reaction,
           c.get('runtime').fallbackUserIcon,
+          userMap
         ).catch(throwErrorWith('failed to fill reaction'))
 
         reactionResponses.push(reactionResponse)
